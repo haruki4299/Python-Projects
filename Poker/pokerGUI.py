@@ -9,6 +9,21 @@
 import random
 import itertools
 
+# Constants
+ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
+HAND_RANKINGS = {
+            "high_card": 0,
+            "one_pair": 1,
+            "two_pairs": 2,
+            "three_of_a_kind": 3,
+            "straight": 4,
+            "flush": 5,
+            "full_house": 6,
+            "four_of_a_kind": 7,
+            "straight_flush": 8,
+        }
+
 class Card:
     def __init__(self, rank, suit):
         self.rank = rank
@@ -34,8 +49,6 @@ class Card:
     
 class Deck:
     def __init__(self):
-        ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-        suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
         self.cards = [Card(rank,suit) for suit in suits for rank in ranks]
         random.shuffle(self.cards)
         
@@ -50,6 +63,11 @@ class Player:
         self.chips = chips
         self.bet = 0
         self.folded = False
+        
+    def printCards(self):
+        s = self.name + ": " + self.hand[0].rank + " of " + self.hand[0].suit + ", " + self.hand[1].rank + " of " + self.hand[1].suit
+        print(s)
+            
     
     def raiseBet(self, amount: int):
         if self.chips < amount:
@@ -72,6 +90,15 @@ class Player:
 class CommunityCards:
     def __init__(self):
         self.cards = []
+    
+    def printCards(self):
+        print("The Community Cards:")
+        s = ""
+        for card in self.cards:
+            if s != "":
+                s += ", "
+            s += card.rank + " of " + card.suit
+        print(s)  
 
 class Game:
     def __init__(self):
@@ -79,9 +106,34 @@ class Game:
         self.deck = Deck()
         self.communityCards = CommunityCards()
         
-    def addPlayer(self, name: str):
+    def addPlayers(self):
+        """
+        Add at least two players.
+
+        Args:
+            name (str): _description_
+        """
+        print("Welcome to poker. Please add players to the game (min=2, max=6).")
+        count = 1
+        name = input(f"Enter name of player{count}: ")
         ply = Player(name)
         self.players.append(ply)
+        count += 1
+        name = input(f"Enter name of player{count}: ")
+        ply = Player(name)
+        self.players.append(ply)
+        addMore = True
+        while addMore and count < 7:
+            response = input("Would you like to add another player (y/n)?: ")
+            if response == 'y':
+                count += 1
+                name = input(f"Enter name of player{count}: ")
+                ply = Player(name)
+                self.players.append(ply)
+            elif response == 'n':
+                addMore = False
+            else:
+                print("Please respond with (y/n)")
         
     
     def dealCards(self):
@@ -105,19 +157,17 @@ class Game:
         card = self.deck.drawCard()
         self.communityCards.cards.append(card)
     
-    # Return 1 for first, 2 for second, 3 for tie
     def compareHands(self, handInfo1: list, handInfo2: list):
-        HAND_RANKINGS = {
-            "high_card": 0,
-            "one_pair": 1,
-            "two_pairs": 2,
-            "three_of_a_kind": 3,
-            "straight": 4,
-            "flush": 5,
-            "full_house": 6,
-            "four_of_a_kind": 7,
-            "straight_flush": 8,
-        }
+        """
+        Compare two poker hands to determine the winner or a tie.
+
+        Args:
+            handInfo1 (list): Information about the first hand, including its type and relevant values.
+            handInfo2 (list): Information about the second hand, including its type and relevant values.
+
+        Returns:
+            int: 1 if the first hand wins, 2 if the second hand wins, or 3 in case of a tie.
+        """
         if HAND_RANKINGS[handInfo1[0]] > HAND_RANKINGS[handInfo2[0]]:
             return 1
         elif HAND_RANKINGS[handInfo1[0]] < HAND_RANKINGS[handInfo2[0]]:
@@ -156,42 +206,19 @@ class Game:
                         elif handInfo1[1+i] < handInfo2[1+i]:
                             return 2
                 return 3
-                    
-        
-    def findBestHand(self, player: Player):
-        sevenCards = []
-        for card in player.hand:
-            sevenCards.append(card)
-        for card in self.communityCards.cards:
-            sevenCards.append(card)
-        combinations = itertools.combinations(sevenCards, 5)
-        for i in range(7):
-            print(sevenCards[i].rank, sevenCards[i].suit)
-        
-        bestHand = []
-        for hand in combinations:
-            isFlush = True
-            # Check for flush
-            first = hand[0].suit
-            for card in hand:
-                if first != card.suit:
-                    isFlush = False
-            # Check for number
-            isStraight = False
-            straightStart = 0
-            valuesOfHand = []
-            for card in hand:
-                valuesOfHand.append(card.value)
-            valuesOfHand.sort()
-            if valuesOfHand == [1,10,11,12,13]:
-                isStraight = True
-                straightStart = 10
-            for i in range(9):
-                if valuesOfHand == [i+1,i+2,i+3,i+4,i+5]:
-                    isStraight = True
-                    straightStart = i+1
-            # Count the Cards
-            cardCount = {
+                          
+    def countCardsInHand(self, hand):
+        """
+        Count the occurrences of each card value in a given hand.
+
+        Args:
+            hand (list of Card): The hand for which card occurrences are counted.
+
+        Returns:
+            dict: A dictionary where keys represent card values (1-13) and values represent the number of occurrences
+                of each card value in the hand.
+        """
+        cardCount = {
                 2:0,
                 3:0,
                 4:0,
@@ -206,15 +233,64 @@ class Game:
                 13:0,
                 1:0
             }
+        for card in hand:
+            cardCount[card.value] += 1
+        return cardCount
+        
+    def findBestHand(self, player: Player) -> list:
+        """
+        Finds the best hand among the given player's cards and the community cards.
+
+        Args:
+            player: The player whose hand is being evaluated.
+
+        Returns:
+            A list representing the best hand, including the hand's name as a string and additional values if needed.
+            For example, ["straight_flush", 10] or ["one_pair", 8, 6, 5].
+        """
+        sevenCards = []
+        for card in player.hand:
+            sevenCards.append(card)
+        for card in self.communityCards.cards:
+            sevenCards.append(card)
+        combinations = itertools.combinations(sevenCards, 5)
+        
+        
+        bestHand = []
+        for hand in combinations:
+            isFlush = True
+            # Check for flush
+            first = hand[0].suit
             for card in hand:
-                cardCount[card.value] += 1
+                if first != card.suit:
+                    isFlush = False
+            # Check for straight
+            isStraight = False
+            straightStart = 0
+            valuesOfHand = []
+            for card in hand:
+                valuesOfHand.append(card.value)
+            valuesOfHand.sort()
+            if valuesOfHand == [1,10,11,12,13]:
+                isStraight = True
+                straightStart = 10
+            for i in range(9):
+                if valuesOfHand == [i+1,i+2,i+3,i+4,i+5]:
+                    isStraight = True
+                    straightStart = i+1
+            # Count the Cards
+            cardCount = self.countCardsInHand(hand)
+            # Setting variables
             fourOfKind = False
             fourOfKindValue = 0
+            
             threeOfKind = False
             threeOfKindValue = 0
+            
             hasPair = False
             pairValue = 0
             pairValue2 = 0
+            
             for key in cardCount:
                 if cardCount[key] == 2 and hasPair == False:
                     hasPair = True
@@ -241,7 +317,7 @@ class Game:
                         secondHighCard = highCard
                         highCard = key
                         
-            # Assign Proper name to the hand
+            # Assign Proper name to the hand and save card values for comparing ties
             handInfo = []
             if isStraight == True and isFlush == True:
                 handInfo.append("straight_flush")
@@ -288,30 +364,54 @@ class Game:
                     bestHand = handInfo
         return bestHand
     
+    def printBoard(self):
+        self.communityCards.printCards()
+        for player in self.players:
+            player.printCards()
+            
+    def printWinners(self, winners, bestHand):
+        winningHand = bestHand[0][0].replace('_',' ')
+        print("The winners are:")
+        for player in winners:
+            print(player.name)
+        print("With the winning hand of " + winningHand)
+    
     def playRound(self) -> list[Player]:
         self.dealCards()
         # Betting
         self.dealFlop()
         self.dealTurn()
         self.dealRiver()
-        bestHands = []
+        # Evaluating the winner
+        winners = []
+        bestHand = []
         for player in self.players:
-            print("looking at " + player.name)
-            bestHands.append(self.findBestHand(player))
-        result = self.compareHands(bestHands[0],bestHands[1])
-        if result == 1:
-            print(self.players[0].name + " wins! with " + bestHands[0][0])
-        elif result == 2:
-            print(self.players[1].name + " wins! with " + bestHands[1][0])
-        else:
-            print("Tie")
+            if winners == []:
+                winners.append(player)
+                bestHand.append(self.findBestHand(player))
+            else:
+                curBest = bestHand[0]
+                compHand = self.findBestHand(player)
+                result = self.compareHands(curBest, compHand)
+                if result == 2:
+                    winners = []
+                    bestHand = []
+                    winners.append(player)
+                    bestHand.append(compHand)
+                elif result == 3:
+                    winners.append(player)
+                    bestHand.append(compHand)
+                else:
+                    pass
+        
+        self.printBoard()
+        self.printWinners(winners, bestHand)
         
         
         
 def main():
     game = Game()
-    game.addPlayer("Haruki")
-    game.addPlayer("Sean")
+    game.addPlayers()
     game.playRound()
     
 main()
