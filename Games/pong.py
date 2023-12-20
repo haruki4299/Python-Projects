@@ -4,6 +4,7 @@
 
 import turtle
 import random
+import time
 
 wn = turtle.Screen()
 wn.title("Pong by Haruki")
@@ -40,8 +41,9 @@ ball.shape("square")
 ball.color("white")
 ball.penup()
 ball.goto(0,0)
-ball.dx = 2
-ball.dy = 2
+# Initialize Ball Speed
+ball.dx = random.choice([-1, 1]) * 0.2
+ball.dy = random.uniform(-0.5, 0.5)
 
 #Pen
 pen = turtle.Turtle()
@@ -80,6 +82,9 @@ wn.onkeypress(paddle_a_down, "s")
 wn.onkeypress(paddle_b_up, "Up")
 wn.onkeypress(paddle_b_down, "Down")
 
+# show the screen for a little before starting the game
+wn.update()
+time.sleep(3)
 # Main game loop
 while True:
     wn.update()
@@ -99,22 +104,24 @@ while True:
 
     if ball.xcor() > 390:
         score_a += 1
-        ball.goto(200, 0)
-        ball.dx = -2
+        ball.goto(0, 0)
+        ball.dx = 0.2
+        ball.dy = random.uniform(-0.5, 0.5)
         pen.clear()
         pen.write("Player A: {}  Player B: {}".format(score_a, score_b), align="center", font=("Courier", 24, "normal"))
 
     if ball.xcor() < -390:
         score_b += 1
-        ball.goto(-200, 0)
-        ball.dx = 2
+        ball.goto(0, 0)
+        ball.dx = -0.2
+        ball.dy = random.uniform(-0.5, 0.5)
         pen.clear()
         pen.write("Player A: {}  Player B: {}".format(score_a, score_b), align="center", font=("Courier", 24, "normal"))
 
     # Paddle and Ball Collisions
     if (ball.xcor() > 340 and ball.xcor() < 350) and ball.ycor() < (paddle_b.ycor() + 40) and ball.ycor()  > (paddle_b.ycor() - 40):
         ball.setx(340)
-        ball.dx *= -1*random.randint(8,20)/10
+        ball.dx *= -1.25
     if (ball.xcor() < -340 and ball.xcor() > -350) and ball.ycor() < (paddle_a.ycor() + 40) and ball.ycor()  > (paddle_a.ycor() - 40):
         ball.setx(-340)
-        ball.dx *= -1*random.randint(8,20)/10
+        ball.dx *= -1.25
