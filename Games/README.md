@@ -10,7 +10,7 @@ A simple two player pong game that uses python turtle graphics
 
 Once the game is started a pong game will start with one player using `W` and `S` key to control the paddle and one player using the up and down arrows. The graphics interface will pop up and after 3 seconds the game will begin. The goal of the game is to not let the ball touch your side of the wall and deflect it with a paddle.
 
-<img src="img/example.png" alt="image" width="300" height="auto">
+<img src="img/pong.png" alt="image" width="300" height="auto">
 
 The ball will accelerate with each bounce off the paddle so that the ball will be increasingly difficult to bounce back as the game progresses. The game will restart automatically once one player loses counting the score.
 
